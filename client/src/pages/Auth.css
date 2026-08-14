@@ -1,0 +1,189 @@
+/* =========================
+   AUTH PAGE
+========================= */
+
+.auth-page {
+  min-height: calc(100vh - 80px);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 50px 20px;
+
+  background: var(--surface);
+}
+
+
+/* =========================
+   CONTAINER
+========================= */
+
+.auth-container {
+  width: 100%;
+  max-width: 440px;
+}
+
+
+/* =========================
+   CARD
+========================= */
+
+.auth-card {
+  padding: 36px;
+
+  background: var(--background);
+
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--shadow-md);
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.auth-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+
+  margin-bottom: 8px;
+}
+
+.auth-header p {
+  color: var(--text-light);
+  font-size: 14px;
+}
+
+
+/* =========================
+   FORM
+========================= */
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+
+/* =========================
+   FORM GROUP
+========================= */
+
+.auth-form .form-group {
+  margin-bottom: 0;
+}
+
+.auth-form .form-group label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+
+/* =========================
+   INPUT
+========================= */
+
+.auth-form input {
+  height: 48px;
+}
+
+
+/* =========================
+   BUTTON
+========================= */
+
+.auth-button {
+  width: 100%;
+
+  min-height: 48px;
+
+  margin-top: 4px;
+
+  font-size: 15px;
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+
+.auth-footer {
+  margin-top: 24px;
+  padding-top: 24px;
+
+  border-top: 1px solid var(--border-light);
+
+  text-align: center;
+}
+
+.auth-footer p {
+  color: var(--text-light);
+  font-size: 14px;
+}
+
+.auth-footer a {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.auth-footer a:hover {
+  color: var(--primary-dark);
+}
+
+
+/* =========================
+   LOADING
+========================= */
+
+.auth-loading {
+  min-height: 400px;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  color: var(--text-light);
+}
+
+.auth-loading .spinner {
+  margin-bottom: 14px;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 600px) {
+  .auth-page {
+    min-height: calc(100vh - 60px);
+
+    padding: 30px 16px;
+  }
+
+  .auth-card {
+    padding: 26px 20px;
+
+    border-radius: var(--radius-md);
+  }
+
+  .auth-header h1 {
+    font-size: 24px;
+  }
+}

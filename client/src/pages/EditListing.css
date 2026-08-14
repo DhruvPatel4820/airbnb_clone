@@ -1,0 +1,373 @@
+/* =========================
+   PAGE
+========================= */
+
+.edit-listing-page {
+  padding: 48px 0 80px;
+  background: var(--surface);
+  min-height: calc(100vh - 80px);
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.edit-listing-header {
+  max-width: 760px;
+  margin: 0 auto 28px;
+}
+
+.edit-listing-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.edit-listing-header p {
+  color: var(--text-light);
+}
+
+/* =========================
+   CARD
+========================= */
+
+.edit-listing-card {
+  max-width: 760px;
+  margin: 0 auto;
+
+  background: var(--background);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+
+  padding: 32px;
+
+  box-shadow: var(--shadow-sm);
+}
+
+/* =========================
+   FORM
+========================= */
+
+.edit-listing-form {
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================
+   FORM SECTION
+========================= */
+
+.edit-listing-form .form-section {
+  padding: 28px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.edit-listing-form .form-section:first-child {
+  padding-top: 0;
+}
+
+.form-section-header {
+  margin-bottom: 22px;
+}
+
+.form-section-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.form-section-header p {
+  color: var(--text-light);
+  font-size: 14px;
+}
+
+/* =========================
+   FORM GROUP
+========================= */
+
+.edit-listing-form .form-group {
+  margin-bottom: 18px;
+}
+
+.edit-listing-form .form-group:last-child {
+  margin-bottom: 0;
+}
+
+.edit-listing-form label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* =========================
+   FORM GRID
+========================= */
+
+.form-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.form-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* =========================
+   PRICE
+========================= */
+
+.price-input {
+  display: flex;
+  align-items: center;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+
+  overflow: hidden;
+  background: white;
+}
+
+.price-input span {
+  padding-left: 14px;
+
+  color: var(--text-light);
+  font-weight: 600;
+}
+
+.price-input input {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.price-input input:focus {
+  box-shadow: none;
+}
+
+/* =========================
+   HELP TEXT
+========================= */
+
+.edit-listing-form small {
+  display: block;
+
+  margin-top: 7px;
+
+  color: var(--text-light);
+  font-size: 12px;
+}
+
+/* =========================
+   ALERTS
+========================= */
+
+.edit-listing-card .alert {
+  margin-bottom: 20px;
+}
+
+/* =========================
+   IMAGE GRID
+========================= */
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(150px, 1fr)
+  );
+  gap: 12px;
+}
+
+.image-item {
+  position: relative;
+  width: 100%;
+}
+
+.image-item img {
+  display: block;
+
+  width: 100%;
+  height: 150px;
+
+  object-fit: cover;
+
+  border-radius: 8px;
+}
+
+/* =========================
+   REMOVE IMAGE
+========================= */
+
+.remove-image-button {
+  position: absolute;
+
+  top: 8px;
+  right: 8px;
+
+  width: 30px;
+  height: 30px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+
+  cursor: pointer;
+
+  font-size: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-image-button:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.remove-image-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* =========================
+   ACTIONS
+========================= */
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+
+  padding-top: 28px;
+}
+
+.form-actions button {
+  min-width: 120px;
+}
+
+.update-listing-button {
+  min-width: 160px !important;
+}
+
+/* =========================
+   LOADING / STATE
+========================= */
+
+.edit-listing-page .listing-state {
+  min-height: 400px;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+
+  color: var(--text-light);
+
+  gap: 16px;
+}
+
+.edit-listing-page .listing-state .alert {
+  margin-bottom: 0;
+}
+
+/* =========================
+   SPINNER
+========================= */
+
+.edit-listing-page .spinner {
+  width: 34px;
+  height: 34px;
+
+  margin-bottom: 14px;
+
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+
+  border-radius: 50%;
+
+  animation: edit-listing-spin 0.8s linear infinite;
+}
+
+@keyframes edit-listing-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 768px) {
+  .edit-listing-page {
+    padding: 32px 0 50px;
+  }
+
+  .edit-listing-header {
+    margin-bottom: 20px;
+  }
+
+  .edit-listing-header h1 {
+    font-size: 28px;
+  }
+
+  .edit-listing-card {
+    padding: 24px;
+  }
+
+  .form-grid-3 {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+/* =========================
+   SMALL MOBILE
+========================= */
+
+@media (max-width: 500px) {
+  .edit-listing-page {
+    padding: 24px 0 40px;
+  }
+
+  .edit-listing-card {
+    padding: 20px 16px;
+    border-radius: var(--radius-md);
+  }
+
+  .edit-listing-header h1 {
+    font-size: 25px;
+  }
+
+  .edit-listing-form .form-section {
+    padding: 24px 0;
+  }
+
+  .form-section-header h2 {
+    font-size: 18px;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+
+  .image-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .image-item img {
+    height: 130px;
+  }
+}
