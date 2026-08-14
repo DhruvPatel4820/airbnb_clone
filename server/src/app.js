@@ -21,7 +21,7 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: "https://airbnb-clone-frontend-f237.onrender.com",
     credentials: true,
   }),
 );
