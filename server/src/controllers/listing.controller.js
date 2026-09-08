@@ -57,11 +57,77 @@ exports.createListing = catchAsync(async (req, res) => {
 // =========================
 
 exports.getAllListings = catchAsync(async (req, res) => {
-  const listings = await getAllListings();
+  const { search, propertyType, minPrice, maxPrice, guests, sort } = req.query;
+
+  // =========================
+  // VALIDATE PRICE RANGE
+  // =========================
+
+  if (
+    minPrice !== undefined &&
+    minPrice !== "" &&
+    (Number.isNaN(Number(minPrice)) || Number(minPrice) < 0)
+  ) {
+    throw new AppError("Minimum price must be a valid positive number", 400);
+  }
+
+  if (
+    maxPrice !== undefined &&
+    maxPrice !== "" &&
+    (Number.isNaN(Number(maxPrice)) || Number(maxPrice) < 0)
+  ) {
+    throw new AppError("Maximum price must be a valid positive number", 400);
+  }
+
+  if (
+    minPrice !== undefined &&
+    maxPrice !== undefined &&
+    minPrice !== "" &&
+    maxPrice !== "" &&
+    Number(minPrice) > Number(maxPrice)
+  ) {
+    throw new AppError(
+      "Minimum price cannot be greater than maximum price",
+      400,
+    );
+  }
+
+  // =========================
+  // VALIDATE GUESTS
+  // =========================
+
+  if (
+    guests !== undefined &&
+    guests !== "" &&
+    (!Number.isInteger(Number(guests)) || Number(guests) < 1)
+  ) {
+    throw new AppError("Guests must be a valid positive number", 400);
+  }
+
+  // =========================
+  // GET LISTINGS
+  // =========================
+
+  const listings = await getAllListings({
+    search,
+    propertyType,
+    minPrice,
+    maxPrice,
+    guests,
+    sort,
+  });
 
   res.status(200).json({
     success: true,
     count: listings.length,
+    filters: {
+      search: search || "",
+      propertyType: propertyType || "all",
+      minPrice: minPrice || "",
+      maxPrice: maxPrice || "",
+      guests: guests || "",
+      sort: sort || "newest",
+    },
     data: listings,
   });
 });

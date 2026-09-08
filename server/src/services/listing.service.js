@@ -18,12 +18,106 @@ const createListing = async (listingData, userId) => {
 // GET ALL LISTINGS
 // =========================
 
-const getAllListings = async () => {
-  const listings = await Listing.find({
+// =========================
+// GET ALL LISTINGS
+// =========================
+
+const getAllListings = async ({
+  search,
+  propertyType,
+  minPrice,
+  maxPrice,
+  guests,
+  sort,
+} = {}) => {
+  const filter = {
     isActive: true,
-  })
+  };
+
+  // =========================
+  // SEARCH
+  // =========================
+
+  if (search?.trim()) {
+    const searchRegex = new RegExp(search.trim(), "i");
+
+    filter.$or = [
+      { title: searchRegex },
+      { "location.city": searchRegex },
+      { "location.state": searchRegex },
+    ];
+  }
+
+  // =========================
+  // PROPERTY TYPE
+  // =========================
+
+  if (propertyType && propertyType !== "all") {
+    filter.propertyType = propertyType;
+  }
+
+  // =========================
+  // PRICE FILTER
+  // =========================
+
+  if (minPrice || maxPrice) {
+    filter.price = {};
+
+    if (minPrice) {
+      filter.price.$gte = Number(minPrice);
+    }
+
+    if (maxPrice) {
+      filter.price.$lte = Number(maxPrice);
+    }
+  }
+
+  // =========================
+  // GUEST FILTER
+  // =========================
+
+  if (guests) {
+    filter.guests = {
+      $gte: Number(guests),
+    };
+  }
+
+  // =========================
+  // SORT
+  // =========================
+
+  let sortOption = {
+    createdAt: -1,
+  };
+
+  if (sort === "price_asc") {
+    sortOption = {
+      price: 1,
+    };
+  }
+
+  if (sort === "price_desc") {
+    sortOption = {
+      price: -1,
+    };
+  }
+
+  if (sort === "rating") {
+    sortOption = {
+      averageRating: -1,
+      totalReviews: -1,
+    };
+  }
+
+  if (sort === "newest") {
+    sortOption = {
+      createdAt: -1,
+    };
+  }
+
+  const listings = await Listing.find(filter)
     .populate("owner", "fullName username avatar")
-    .sort({ createdAt: -1 });
+    .sort(sortOption);
 
   return listings;
 };

@@ -21,9 +21,9 @@ function AppRoutes() {
       <Navbar />
 
       <Routes>
-        {/* =========================
+        {/* =====================================
             PUBLIC ROUTES
-        ========================= */}
+        ===================================== */}
 
         <Route path="/" element={<Home />} />
 
@@ -33,9 +33,9 @@ function AppRoutes() {
 
         <Route path="/listings/:listingId" element={<ListingDetails />} />
 
-        {/* =========================
-            AUTHENTICATED ROUTES
-        ========================= */}
+        {/* =====================================
+            AUTHENTICATED USER ROUTES
+        ===================================== */}
 
         <Route element={<ProtectedRoute />}>
           <Route path="/listings/create" element={<CreateListing />} />
@@ -47,9 +47,9 @@ function AppRoutes() {
           <Route path="/my-bookings" element={<MyBookings />} />
         </Route>
 
-        {/* =========================
+        {/* =====================================
             ADMIN ROUTES
-        ========================= */}
+        ===================================== */}
 
         <Route element={<AdminRoute />}>
           <Route path="/admin" element={<Admin />} />

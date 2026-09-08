@@ -21,7 +21,10 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: "https://airbnb-clone-frontend-f237.onrender.com",
+    origin: [
+      "http://localhost:5173", // Trailing slash hatai gayi hai
+      "https://airbnb-clone-frontend-f237.onrender.com",
+    ],
     credentials: true,
   }),
 );

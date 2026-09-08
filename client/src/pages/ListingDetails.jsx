@@ -1,27 +1,16 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import api from "../services/api";
-import { useAuth } from "../context/AuthContext";
 import "./ListingDetails.css";
 
 function ListingDetails() {
   const { listingId } = useParams();
-  const navigate = useNavigate();
-
-  const { user, isAuthenticated } = useAuth();
-
-  // =========================
-  // LISTING STATE
-  // =========================
 
   const [listing, setListing] = useState(null);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // =========================
-  // BOOKING STATE
-  // =========================
+  const [selectedImage, setSelectedImage] = useState(0);
 
   const [formData, setFormData] = useState({
     checkIn: "",
@@ -33,35 +22,20 @@ function ListingDetails() {
   const [bookingError, setBookingError] = useState("");
   const [bookingSuccess, setBookingSuccess] = useState("");
 
-  // =========================
-  // REVIEW STATE
-  // =========================
-
-  const [reviews, setReviews] = useState([]);
-  const [reviewsLoading, setReviewsLoading] = useState(true);
-  const [reviewsError, setReviewsError] = useState("");
-
-  const [reviewForm, setReviewForm] = useState({
-    rating: 5,
-    comment: "",
-  });
-
-  const [reviewLoading, setReviewLoading] = useState(false);
-  const [reviewMessage, setReviewMessage] = useState("");
-  const [reviewError, setReviewError] = useState("");
-
-  const [editingReviewId, setEditingReviewId] = useState(null);
-
-  // =========================
-  // GET LISTING
-  // =========================
+  // =========================================
+  // FETCH LISTING
+  // =========================================
 
   useEffect(() => {
     const fetchListing = async () => {
       try {
+        setLoading(true);
+        setError("");
+
         const response = await api.get(`/listings/${listingId}`);
 
         setListing(response.data.data);
+        setSelectedImage(0);
       } catch (error) {
         setError(error.response?.data?.message || "Failed to load listing");
       } finally {
@@ -69,71 +43,126 @@ function ListingDetails() {
       }
     };
 
-    fetchListing();
-  }, [listingId]);
-
-  // =========================
-  // GET REVIEWS
-  // =========================
-
-  const fetchReviews = async () => {
-    try {
-      setReviewsError("");
-
-      const response = await api.get(`/reviews/listing/${listingId}`);
-
-      setReviews(response.data.data || []);
-    } catch (error) {
-      setReviewsError(
-        error.response?.data?.message || "Failed to load reviews",
-      );
-    } finally {
-      setReviewsLoading(false);
+    if (listingId) {
+      fetchListing();
+    } else {
+      setError("Listing ID is missing");
+      setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchReviews();
   }, [listingId]);
 
-  // =========================
-  // BOOKING FORM CHANGE
-  // =========================
+  // =========================================
+  // HANDLE INPUT
+  // =========================================
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    setBookingError("");
+    setBookingSuccess("");
   };
 
-  // =========================
-  // CREATE BOOKING
-  // =========================
+  // =========================================
+  // TODAY DATE
+  // =========================================
 
-  const handleBooking = async (e) => {
-    e.preventDefault();
+  const getTodayDate = () => {
+    const today = new Date();
+
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  };
+
+  // =========================================
+  // CALCULATE NIGHTS
+  // =========================================
+
+  const calculateNights = () => {
+    if (!formData.checkIn || !formData.checkOut) {
+      return 0;
+    }
+
+    const checkInDate = new Date(`${formData.checkIn}T00:00:00`);
+    const checkOutDate = new Date(`${formData.checkOut}T00:00:00`);
+
+    const difference = checkOutDate.getTime() - checkInDate.getTime();
+
+    if (difference <= 0) {
+      return 0;
+    }
+
+    return Math.ceil(difference / (1000 * 60 * 60 * 24));
+  };
+
+  const totalNights = calculateNights();
+
+  const pricePerNight = Number(listing?.price || 0);
+
+  const totalPrice = totalNights * pricePerNight;
+
+  // =========================================
+  // BOOKING
+  // =========================================
+
+  const handleBooking = async (event) => {
+    event.preventDefault();
 
     setBookingError("");
     setBookingSuccess("");
 
-    if (!isAuthenticated) {
-      navigate("/login");
+    // Check-in
+    if (!formData.checkIn) {
+      setBookingError("Please select a check-in date.");
       return;
     }
 
-    if (!formData.checkIn || !formData.checkOut) {
-      setBookingError("Please select check-in and check-out dates.");
+    // Check-out
+    if (!formData.checkOut) {
+      setBookingError("Please select a check-out date.");
       return;
     }
 
-    if (new Date(formData.checkOut) <= new Date(formData.checkIn)) {
+    const today = getTodayDate();
+
+    // Past date
+    if (formData.checkIn < today) {
+      setBookingError("Check-in date cannot be in the past.");
+      return;
+    }
+
+    // Check-out validation
+    if (formData.checkOut <= formData.checkIn) {
       setBookingError("Check-out date must be after check-in date.");
       return;
     }
 
-    if (Number(formData.guests) < 1) {
+    // Guests
+    const guests = Number(formData.guests);
+
+    if (!Number.isInteger(guests) || guests < 1) {
       setBookingError("Guests must be at least 1.");
+      return;
+    }
+
+    // Maximum guests
+    if (guests > Number(listing.guests)) {
+      setBookingError(
+        `This property can accommodate a maximum of ${listing.guests} guests.`,
+      );
+      return;
+    }
+
+    // Nights
+    if (totalNights <= 0) {
+      setBookingError("Please select valid check-in and check-out dates.");
       return;
     }
 
@@ -141,10 +170,10 @@ function ListingDetails() {
       setBookingLoading(true);
 
       const response = await api.post("/bookings", {
-        listingId,
+        listingId: listing._id,
         checkIn: formData.checkIn,
         checkOut: formData.checkOut,
-        guests: Number(formData.guests),
+        guests,
       });
 
       setBookingSuccess(
@@ -156,10 +185,6 @@ function ListingDetails() {
         checkOut: "",
         guests: 1,
       });
-
-      setTimeout(() => {
-        navigate("/my-bookings");
-      }, 1000);
     } catch (error) {
       setBookingError(
         error.response?.data?.message || "Failed to create booking",
@@ -169,142 +194,16 @@ function ListingDetails() {
     }
   };
 
-  // =========================
-  // REVIEW FORM CHANGE
-  // =========================
-
-  const handleReviewChange = (e) => {
-    setReviewForm({
-      ...reviewForm,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  // =========================
-  // CREATE / UPDATE REVIEW
-  // =========================
-
-  const handleReviewSubmit = async (e) => {
-    e.preventDefault();
-
-    setReviewError("");
-    setReviewMessage("");
-
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
-
-    if (!reviewForm.comment.trim()) {
-      setReviewError("Please write a review.");
-      return;
-    }
-
-    try {
-      setReviewLoading(true);
-
-      if (editingReviewId) {
-        await api.patch(`/reviews/${editingReviewId}`, {
-          rating: Number(reviewForm.rating),
-          comment: reviewForm.comment,
-        });
-
-        setReviewMessage("Review updated successfully.");
-      } else {
-        await api.post(`/reviews/listing/${listingId}`, {
-          rating: Number(reviewForm.rating),
-          comment: reviewForm.comment,
-        });
-
-        setReviewMessage("Review added successfully.");
-      }
-
-      setReviewForm({
-        rating: 5,
-        comment: "",
-      });
-
-      setEditingReviewId(null);
-
-      await fetchReviews();
-    } catch (error) {
-      setReviewError(error.response?.data?.message || "Failed to save review");
-    } finally {
-      setReviewLoading(false);
-    }
-  };
-
-  // =========================
-  // EDIT REVIEW
-  // =========================
-
-  const handleEditReview = (review) => {
-    setEditingReviewId(review._id);
-
-    setReviewForm({
-      rating: review.rating,
-      comment: review.comment,
-    });
-
-    setReviewError("");
-    setReviewMessage("");
-  };
-
-  // =========================
-  // CANCEL EDIT
-  // =========================
-
-  const handleCancelEdit = () => {
-    setEditingReviewId(null);
-
-    setReviewForm({
-      rating: 5,
-      comment: "",
-    });
-
-    setReviewError("");
-    setReviewMessage("");
-  };
-
-  // =========================
-  // DELETE REVIEW
-  // =========================
-
-  const handleDeleteReview = async (reviewId) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this review?",
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      setReviewError("");
-      setReviewMessage("");
-
-      await api.delete(`/reviews/${reviewId}`);
-
-      setReviewMessage("Review deleted successfully.");
-
-      await fetchReviews();
-    } catch (error) {
-      setReviewError(
-        error.response?.data?.message || "Failed to delete review",
-      );
-    }
-  };
-
-  // =========================
+  // =========================================
   // LOADING
-  // =========================
+  // =========================================
 
   if (loading) {
     return (
       <main className="listing-details-page">
-        <div className="container">
+        <div className="listing-details-container">
           <div className="listing-state">
-            <div className="spinner"></div>
+            <div className="listing-spinner"></div>
             <p>Loading listing...</p>
           </div>
         </div>
@@ -312,269 +211,298 @@ function ListingDetails() {
     );
   }
 
-  // =========================
+  // =========================================
   // ERROR
-  // =========================
+  // =========================================
 
-  if (error) {
+  if (error || !listing) {
     return (
       <main className="listing-details-page">
-        <div className="container">
-          <div className="listing-state error-state">
-            <h2>Something went wrong</h2>
-            <p>{error}</p>
-
-            <button className="btn btn-primary" onClick={() => navigate(-1)}>
-              Go Back
-            </button>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  if (!listing) {
-    return (
-      <main className="listing-details-page">
-        <div className="container">
-          <div className="listing-state">
+        <div className="listing-details-container">
+          <div className="listing-state listing-error-state">
             <h2>Listing not found</h2>
+
+            <p>{error || "This listing does not exist."}</p>
+
+            <Link to="/" className="btn btn-primary">
+              Back to Listings
+            </Link>
           </div>
         </div>
       </main>
     );
   }
 
-  const images = listing.images || [];
+  // =========================================
+  // IMAGES
+  // =========================================
 
-  // =========================
-  // UI
-  // =========================
+  const images = Array.isArray(listing.images) ? listing.images : [];
+
+  const currentImage =
+    images.length > 0
+      ? images[Math.min(selectedImage, images.length - 1)]
+      : null;
 
   return (
     <main className="listing-details-page">
-      <div className="container">
-        {/* =========================
-            HEADER
-        ========================= */}
+      <div className="listing-details-container">
+        {/* =====================================
+            BACK
+        ===================================== */}
 
-        <section className="listing-header">
-          <h1>{listing.title}</h1>
+        <Link to="/" className="listing-back-link">
+          ← Back to listings
+        </Link>
 
-          <div className="listing-meta">
-            <span>
-              📍 {listing.location?.city}, {listing.location?.state},{" "}
-              {listing.location?.country}
-            </span>
-
-            <span>
-              ⭐ {listing.averageRating || 0} ({listing.totalReviews || 0}{" "}
-              reviews)
-            </span>
-          </div>
-        </section>
-
-        {/* =========================
-            IMAGE GALLERY
-        ========================= */}
+        {/* =====================================
+            GALLERY
+        ===================================== */}
 
         <section className="listing-gallery">
-          {images.length > 0 ? (
-            images.slice(0, 5).map((image, index) => (
-              <div
-                key={index}
-                className={`gallery-image gallery-image-${index + 1}`}
-              >
-                <img src={image} alt={`${listing.title} ${index + 1}`} />
+          {/* ONLY ONE MAIN IMAGE */}
+          <div className="listing-main-image">
+            {currentImage ? (
+              <img src={currentImage} alt={listing.title} />
+            ) : (
+              <div className="listing-image-placeholder">
+                <span>🏠</span>
+                <p>No image available</p>
               </div>
-            ))
-          ) : (
-            <div className="gallery-placeholder">
-              <span>🏠</span>
-              <p>No images available</p>
+            )}
+          </div>
+
+          {/* THUMBNAILS */}
+          {images.length > 1 && (
+            <div className="listing-thumbnail-wrapper">
+              <div className="listing-thumbnail-list">
+                {images.map((image, index) => (
+                  <button
+                    type="button"
+                    key={`${image}-${index}`}
+                    className={`listing-thumbnail ${
+                      selectedImage === index ? "active" : ""
+                    }`}
+                    onClick={() => setSelectedImage(index)}
+                  >
+                    <img src={image} alt={`${listing.title} ${index + 1}`} />
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </section>
 
-        {/* =========================
+        {/* =====================================
             MAIN LAYOUT
-        ========================= */}
+        ===================================== */}
 
-        <div className="listing-layout">
-          {/* =========================
+        <section className="listing-layout">
+          {/* ===================================
               LEFT CONTENT
-          ========================= */}
+          =================================== */}
 
-          <div className="listing-main">
-            {/* PROPERTY INFO */}
+          <div className="listing-main-content">
+            {/* HEADING */}
 
-            <section className="listing-section">
-              <div className="property-heading">
-                <div>
-                  <h2>
-                    {listing.propertyType
-                      ? listing.propertyType.charAt(0).toUpperCase() +
-                        listing.propertyType.slice(1)
-                      : "Property"}
-                  </h2>
+            <div className="listing-heading">
+              <div className="listing-heading-info">
+                <p className="listing-type">{listing.propertyType}</p>
 
-                  <p className="owner-name">
-                    {listing.guests} guests · {listing.bedrooms} bedrooms ·{" "}
-                    {listing.bathrooms} bathrooms
-                  </p>
-                </div>
+                <h1>{listing.title}</h1>
 
-                <div className="owner-avatar">
-                  {listing.owner?.fullName?.charAt(0) ||
-                    listing.owner?.username?.charAt(0) ||
-                    "U"}
-                </div>
+                <p className="listing-location">
+                  📍 {listing.location?.city}, {listing.location?.state}
+                </p>
               </div>
 
-              <div className="property-stats">
-                <div>
-                  <span>👥</span>
-                  <div>
-                    <strong>{listing.guests}</strong>
-                    <small> guests</small>
-                  </div>
-                </div>
+              <div className="listing-price">
+                <strong>₹{pricePerNight.toLocaleString()}</strong>
 
-                <div>
-                  <span>🛏️</span>
-                  <div>
-                    <strong>{listing.bedrooms}</strong>
-                    <small> bedrooms</small>
-                  </div>
-                </div>
-
-                <div>
-                  <span>🛁</span>
-                  <div>
-                    <strong>{listing.bathrooms}</strong>
-                    <small> bathrooms</small>
-                  </div>
-                </div>
+                <span>/ night</span>
               </div>
-            </section>
+            </div>
 
             {/* DESCRIPTION */}
 
             <section className="listing-section">
               <h2>About this place</h2>
 
-              <p className="description">{listing.description}</p>
+              <p className="listing-description">{listing.description}</p>
+            </section>
+
+            {/* PROPERTY DETAILS */}
+
+            <section className="listing-section">
+              <h2>Property details</h2>
+
+              <div className="property-details-grid">
+                <div className="property-detail">
+                  <span>🏠</span>
+
+                  <div>
+                    <strong>Property Type</strong>
+
+                    <p>{listing.propertyType}</p>
+                  </div>
+                </div>
+
+                <div className="property-detail">
+                  <span>👥</span>
+
+                  <div>
+                    <strong>Guests</strong>
+
+                    <p>Up to {listing.guests} guests</p>
+                  </div>
+                </div>
+
+                <div className="property-detail">
+                  <span>📍</span>
+
+                  <div>
+                    <strong>Location</strong>
+
+                    <p>
+                      {listing.location?.city}, {listing.location?.state}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </section>
 
             {/* AMENITIES */}
 
-            <section className="listing-section">
-              <h2>What this place offers</h2>
+            {listing.amenities?.length > 0 && (
+              <section className="listing-section">
+                <h2>Amenities</h2>
 
-              {listing.amenities?.length > 0 ? (
-                <div className="amenities-grid">
+                <div className="amenities-list">
                   {listing.amenities.map((amenity, index) => (
-                    <div className="amenity-item" key={index}>
-                      <span>✓</span>
-                      <p>{amenity}</p>
-                    </div>
+                    <span className="amenity" key={`${amenity}-${index}`}>
+                      ✓ {amenity}
+                    </span>
                   ))}
                 </div>
-              ) : (
-                <p className="muted-text">No amenities listed.</p>
-              )}
-            </section>
+              </section>
+            )}
 
-            {/* OWNER */}
+            {/* REVIEWS */}
 
             <section className="listing-section">
-              <h2>Hosted by</h2>
+              <h2>Reviews</h2>
 
-              <div className="owner-card">
-                <div className="owner-avatar owner-avatar-large">
-                  {listing.owner?.fullName?.charAt(0) ||
-                    listing.owner?.username?.charAt(0) ||
-                    "U"}
+              {listing.averageRating ? (
+                <div className="rating-summary">
+                  <strong>⭐ {listing.averageRating}</strong>
+
+                  <span>{listing.totalReviews || 0} reviews</span>
                 </div>
-
-                <div>
-                  <h3>
-                    {listing.owner?.fullName ||
-                      listing.owner?.username ||
-                      "Property Owner"}
-                  </h3>
-
-                  <p>Property host</p>
-                </div>
-              </div>
+              ) : (
+                <p className="no-reviews">No reviews yet.</p>
+              )}
             </section>
           </div>
 
-          {/* =========================
+          {/* ===================================
               BOOKING CARD
-          ========================= */}
+          =================================== */}
 
-          <aside className="booking-card">
-            <div className="booking-price">
-              <strong>₹{listing.price}</strong>
-              <span> / night</span>
+          <aside className="listing-booking-card">
+            <div className="booking-card-header">
+              <h2>Book your stay</h2>
+
+              <p>₹{pricePerNight.toLocaleString()} / night</p>
             </div>
 
-            <div className="booking-rating">
-              ⭐ {listing.averageRating || 0} ({listing.totalReviews || 0}{" "}
-              reviews)
-            </div>
+            <form className="booking-form" onSubmit={handleBooking}>
+              {/* CHECK-IN */}
 
-            {bookingError && (
-              <div className="alert alert-error">{bookingError}</div>
-            )}
+              <div className="booking-form-group">
+                <label htmlFor="checkIn">Check-in</label>
 
-            {bookingSuccess && (
-              <div className="alert alert-success">{bookingSuccess}</div>
-            )}
-
-            <form onSubmit={handleBooking}>
-              <div className="booking-fields">
-                <div className="booking-field">
-                  <label htmlFor="checkIn">CHECK-IN</label>
-
-                  <input
-                    id="checkIn"
-                    type="date"
-                    name="checkIn"
-                    value={formData.checkIn}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-
-                <div className="booking-field">
-                  <label htmlFor="checkOut">CHECK-OUT</label>
-
-                  <input
-                    id="checkOut"
-                    type="date"
-                    name="checkOut"
-                    value={formData.checkOut}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-
-                <div className="booking-field">
-                  <label htmlFor="guests">GUESTS</label>
-
-                  <input
-                    id="guests"
-                    type="number"
-                    name="guests"
-                    min="1"
-                    value={formData.guests}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
+                <input
+                  id="checkIn"
+                  type="date"
+                  name="checkIn"
+                  min={getTodayDate()}
+                  value={formData.checkIn}
+                  onChange={handleChange}
+                  required
+                />
               </div>
+
+              {/* CHECK-OUT */}
+
+              <div className="booking-form-group">
+                <label htmlFor="checkOut">Check-out</label>
+
+                <input
+                  id="checkOut"
+                  type="date"
+                  name="checkOut"
+                  min={formData.checkIn || getTodayDate()}
+                  value={formData.checkOut}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              {/* GUESTS */}
+
+              <div className="booking-form-group">
+                <label htmlFor="guests">Guests</label>
+
+                <input
+                  id="guests"
+                  type="number"
+                  name="guests"
+                  min="1"
+                  max={listing.guests}
+                  value={formData.guests}
+                  onChange={handleChange}
+                  required
+                />
+
+                <small>Maximum {listing.guests} guests</small>
+              </div>
+
+              {/* ERROR */}
+
+              {bookingError && (
+                <div className="booking-error">{bookingError}</div>
+              )}
+
+              {/* SUCCESS */}
+
+              {bookingSuccess && (
+                <div className="booking-success">{bookingSuccess}</div>
+              )}
+
+              {/* PRICE */}
+
+              {totalNights > 0 && (
+                <div className="booking-summary">
+                  <div className="booking-summary-row">
+                    <span>
+                      ₹{pricePerNight.toLocaleString()} × {totalNights}{" "}
+                      {totalNights === 1 ? "night" : "nights"}
+                    </span>
+
+                    <strong>₹{totalPrice.toLocaleString()}</strong>
+                  </div>
+
+                  <div className="booking-summary-divider"></div>
+
+                  <div className="booking-summary-row booking-total">
+                    <span>Total</span>
+
+                    <strong>₹{totalPrice.toLocaleString()}</strong>
+                  </div>
+                </div>
+              )}
+
+              {/* BUTTON */}
 
               <button
                 type="submit"
@@ -583,188 +511,8 @@ function ListingDetails() {
               >
                 {bookingLoading ? "Booking..." : "Book Now"}
               </button>
-
-              <p className="booking-note">You won't be charged yet</p>
             </form>
           </aside>
-        </div>
-
-        {/* =========================
-            REVIEWS
-        ========================= */}
-
-        <section className="listing-section reviews-section">
-          <div className="reviews-heading">
-            <h2>⭐ {listing.averageRating || 0}</h2>
-
-            <span>{listing.totalReviews || 0} reviews</span>
-          </div>
-
-          {/* REVIEW FORM */}
-
-          {isAuthenticated && (
-            <form onSubmit={handleReviewSubmit} className="review-form-card">
-              <h3>{editingReviewId ? "Edit Your Review" : "Write a Review"}</h3>
-
-              {reviewError && (
-                <div className="alert alert-error">{reviewError}</div>
-              )}
-
-              {reviewMessage && (
-                <div className="alert alert-success">{reviewMessage}</div>
-              )}
-
-              <div className="form-group">
-                <label htmlFor="rating">Rating</label>
-
-                <select
-                  id="rating"
-                  name="rating"
-                  value={reviewForm.rating}
-                  onChange={handleReviewChange}
-                >
-                  <option value="5">⭐⭐⭐⭐⭐ 5</option>
-
-                  <option value="4">⭐⭐⭐⭐ 4</option>
-
-                  <option value="3">⭐⭐⭐ 3</option>
-
-                  <option value="2">⭐⭐ 2</option>
-
-                  <option value="1">⭐ 1</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="comment">Comment</label>
-
-                <textarea
-                  id="comment"
-                  name="comment"
-                  value={reviewForm.comment}
-                  onChange={handleReviewChange}
-                  placeholder="Write your review..."
-                  rows="4"
-                  required
-                />
-              </div>
-
-              <div className="form-actions">
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={reviewLoading}
-                >
-                  {reviewLoading
-                    ? "Saving..."
-                    : editingReviewId
-                      ? "Update Review"
-                      : "Submit Review"}
-                </button>
-
-                {editingReviewId && (
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={handleCancelEdit}
-                  >
-                    Cancel
-                  </button>
-                )}
-              </div>
-            </form>
-          )}
-
-          {/* LOGIN MESSAGE */}
-
-          {!isAuthenticated && (
-            <div className="login-review-message">
-              <p>
-                Please{" "}
-                <button type="button" onClick={() => navigate("/login")}>
-                  login
-                </button>{" "}
-                to write a review.
-              </p>
-            </div>
-          )}
-
-          {/* REVIEW LIST */}
-
-          <div className="reviews-list">
-            {reviewsLoading ? (
-              <p className="review-loading">Loading reviews...</p>
-            ) : reviewsError ? (
-              <p className="muted-text">{reviewsError}</p>
-            ) : reviews.length === 0 ? (
-              <div className="empty-reviews">
-                <span>💬</span>
-
-                <h3>No reviews yet</h3>
-
-                <p>Be the first to review this listing.</p>
-              </div>
-            ) : (
-              reviews.map((review) => {
-                const reviewUserId = review.user?._id || review.user;
-
-                const isOwnReview = user?._id === reviewUserId;
-
-                return (
-                  <article className="review-card" key={review._id}>
-                    <div className="review-header">
-                      <div className="review-user">
-                        <div className="review-avatar">
-                          {review.user?.fullName?.charAt(0) ||
-                            review.user?.username?.charAt(0) ||
-                            "U"}
-                        </div>
-
-                        <div>
-                          <h3>
-                            {review.user?.fullName ||
-                              review.user?.username ||
-                              "User"}
-                          </h3>
-
-                          <small>
-                            {review.createdAt &&
-                              new Date(review.createdAt).toLocaleDateString()}
-                          </small>
-                        </div>
-                      </div>
-
-                      <span className="review-rating">
-                        {"⭐".repeat(review.rating)}
-                      </span>
-                    </div>
-
-                    <p className="review-comment">{review.comment}</p>
-
-                    {isOwnReview && (
-                      <div className="review-actions">
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          onClick={() => handleEditReview(review)}
-                        >
-                          Edit
-                        </button>
-
-                        <button
-                          type="button"
-                          className="btn btn-danger"
-                          onClick={() => handleDeleteReview(review._id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
-                  </article>
-                );
-              })
-            )}
-          </div>
         </section>
       </div>
     </main>

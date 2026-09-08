@@ -1,0 +1,139 @@
+.search-filters {
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 2fr)
+    repeat(4, minmax(130px, 1fr))
+    auto;
+  gap: 14px;
+
+  padding: 20px;
+  margin-bottom: 40px;
+
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.filter-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-light);
+}
+
+.filter-group input,
+.filter-group select {
+  width: 100%;
+  min-height: 42px;
+
+  padding: 9px 11px;
+
+  color: var(--text);
+  background: var(--background);
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+
+  outline: none;
+  font: inherit;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+  border-color: var(--primary);
+}
+
+.filter-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.search-button,
+.reset-button {
+  min-height: 42px;
+  padding: 0 16px;
+
+  border-radius: var(--radius-sm);
+
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.search-button {
+  color: white;
+  background: var(--primary);
+  border: 1px solid var(--primary);
+}
+
+.reset-button {
+  color: var(--text);
+  background: var(--background);
+  border: 1px solid var(--border);
+}
+
+.search-button:hover {
+  opacity: 0.9;
+}
+
+.reset-button:hover {
+  background: var(--surface);
+}
+
+
+/* =========================
+   TABLET
+========================= */
+
+@media (max-width: 1050px) {
+  .search-filters {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .search-group {
+    grid-column: span 3;
+  }
+
+  .filter-actions {
+    grid-column: span 3;
+    justify-content: flex-end;
+  }
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 600px) {
+  .search-filters {
+    grid-template-columns: 1fr;
+    padding: 16px;
+    margin-bottom: 30px;
+  }
+
+  .search-group {
+    grid-column: auto;
+  }
+
+  .filter-actions {
+    grid-column: auto;
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .search-button,
+  .reset-button {
+    width: 100%;
+  }
+}

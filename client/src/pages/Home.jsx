@@ -1,28 +1,92 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
 import ListingCard from "../components/ListingCard";
+import SearchFilters from "../components/SearchFilters";
 import "./Home.css";
 
 function Home() {
   const [listings, setListings] = useState([]);
+
   const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const fetchListings = async () => {
-      try {
-        const response = await api.get("/listings");
+  const [filters, setFilters] = useState({
+    search: "",
+    propertyType: "all",
+    minPrice: "",
+    maxPrice: "",
+    guests: "",
+    sort: "newest",
+  });
 
-        setListings(response.data.data || []);
-      } catch (error) {
-        setError(error.response?.data?.message || "Failed to load listings");
-      } finally {
-        setLoading(false);
+  // =========================
+  // FETCH LISTINGS
+  // =========================
+
+  const fetchListings = async (currentFilters = filters) => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const params = {};
+
+      if (currentFilters.search) {
+        params.search = currentFilters.search;
       }
-    };
 
+      if (
+        currentFilters.propertyType &&
+        currentFilters.propertyType !== "all"
+      ) {
+        params.propertyType = currentFilters.propertyType;
+      }
+
+      if (currentFilters.minPrice) {
+        params.minPrice = currentFilters.minPrice;
+      }
+
+      if (currentFilters.maxPrice) {
+        params.maxPrice = currentFilters.maxPrice;
+      }
+
+      if (currentFilters.guests) {
+        params.guests = currentFilters.guests;
+      }
+
+      if (currentFilters.sort) {
+        params.sort = currentFilters.sort;
+      }
+
+      const response = await api.get("/listings", {
+        params,
+      });
+
+      setListings(response.data.data || []);
+    } catch (error) {
+      setError(error.response?.data?.message || "Failed to load listings");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =========================
+  // INITIAL LOAD
+  // =========================
+
+  useEffect(() => {
     fetchListings();
   }, []);
+
+  // =========================
+  // SEARCH
+  // =========================
+
+  const handleSearch = (newFilters) => {
+    setFilters(newFilters);
+
+    fetchListings(newFilters);
+  };
 
   if (loading) {
     return (
@@ -30,6 +94,7 @@ function Home() {
         <div className="home-container">
           <div className="home-state">
             <div className="loading-spinner"></div>
+
             <p>Loading listings...</p>
           </div>
         </div>
@@ -41,10 +106,28 @@ function Home() {
     return (
       <main className="home-page">
         <div className="home-container">
-          <div className="home-state error-state">
-            <h2>Something went wrong</h2>
-            <p>{error}</p>
-          </div>
+          <section className="home-hero">
+            <div>
+              <p className="hero-label">WELCOME TO WANDERLUST</p>
+
+              <h1>Find your perfect stay</h1>
+
+              <p className="hero-description">
+                Discover beautiful places, comfortable stays, and unforgettable
+                experiences.
+              </p>
+            </div>
+          </section>
+
+          <section className="listings-section">
+            <SearchFilters onSearch={handleSearch} />
+
+            <div className="home-state error-state">
+              <h2>Something went wrong</h2>
+
+              <p>{error}</p>
+            </div>
+          </section>
         </div>
       </main>
     );
@@ -53,7 +136,9 @@ function Home() {
   return (
     <main className="home-page">
       <div className="home-container">
-        {/* HERO */}
+        {/* =========================
+            HERO
+        ========================= */}
 
         <section className="home-hero">
           <div>
@@ -68,9 +153,13 @@ function Home() {
           </div>
         </section>
 
-        {/* LISTINGS */}
+        {/* =========================
+            LISTINGS
+        ========================= */}
 
         <section className="listings-section">
+          <SearchFilters onSearch={handleSearch} />
+
           <div className="section-header">
             <div>
               <h2>Explore Listings</h2>
@@ -84,12 +173,9 @@ function Home() {
 
           {listings.length === 0 ? (
             <div className="empty-state">
-              <h3>No listings available</h3>
+              <h3>No listings found</h3>
 
-              <p>
-                There are currently no places available. Please check again
-                later.
-              </p>
+              <p>Try changing your search or filter options.</p>
             </div>
           ) : (
             <div className="listings-grid">
